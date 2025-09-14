@@ -6,33 +6,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static("dist"));
 
-let notes = [
-  {
-    id: "1",
-    content: "HTML is easy",
-    important: true,
-  },
-  {
-    id: "2",
-    content: "Browser can execute only JavaScript",
-    important: false,
-  },
-  {
-    id: "3",
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true,
-  },
-];
-
-const generateId = () => {
-  const maxId =
-    notes.length > 0 ? Math.max(...notes.map((item) => +item.id)) : 0;
-  return String(maxId + 1);
-};
-
-app.get("/", (req, res) => {
-  res.send("<h1>Hello World</h1>");
-});
+let notes = [];
 
 app.get("/api/notes", (req, res) => {
   Note.find({}).then((notes) => {
@@ -42,12 +16,9 @@ app.get("/api/notes", (req, res) => {
 
 app.get("/api/notes/:id", (req, res) => {
   const id = req.params.id;
-  const note = notes.find((n) => n.id === id);
-  if (note) {
+  Note.findById(id).then((note) => {
     res.json(note);
-  } else {
-    res.status(404).end();
-  }
+  });
 });
 
 app.delete("/api/notes/:id", (req, res) => {
@@ -61,13 +32,13 @@ app.post("/api/notes", (req, res) => {
   if (!body.content) {
     return res.status(400).json({ error: "content missing" });
   }
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
-    id: generateId(),
-  };
-  notes = notes.concat(note);
-  res.json(note);
+  });
+  note.save().then((savedNote) => {
+    res.json(savedNote);
+  });
 });
 
 const unknownEndpoint = (req, res) => {
